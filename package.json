@@ -1,0 +1,39 @@
+{
+  "name": "karia-scout",
+  "version": "1.0.0",
+  "description": "Agente de inteligencia competitiva de precios para equipos de ventas de electrodomésticos.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "lint": "eslint src/",
+    "format": "prettier --write src/",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.27.3",
+    "@supabase/supabase-js": "2.99.3",
+    "bcryptjs": "2.4.3",
+    "cors": "2.8.5",
+    "docx": "8.5.0",
+    "dotenv": "16.4.5",
+    "exceljs": "4.4.0",
+    "express": "4.22.1",
+    "express-rate-limit": "7.2.0",
+    "express-validator": "7.0.1",
+    "googleapis": "140.0.0",
+    "helmet": "7.1.0",
+    "jsonwebtoken": "9.0.2",
+    "winston": "3.13.0"
+  },
+  "devDependencies": {
+    "eslint": "8.57.0",
+    "husky": "9.0.11",
+    "lint-staged": "15.5.2",
+    "nodemon": "3.1.0",
+    "prettier": "3.2.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

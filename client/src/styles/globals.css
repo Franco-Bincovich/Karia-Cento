@@ -1,0 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600&display=swap');
+
+:root {
+  --color-primary:    #081c54;
+  --color-teal:       #43d1c9;
+  --color-celeste:    #29ABE2;
+  --color-gris:       #BABABA;
+  --color-bg:         #f5f7fa;
+  --color-white:      #ffffff;
+  --color-text:       #1a1a2e;
+  --color-text-muted: #6b7280;
+  --color-error:      #ef4444;
+  --border-radius:    8px;
+  --shadow:           0 2px 8px rgba(8, 28, 84, 0.08);
+  --font:             'Baloo 2', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  font-weight: 500;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+button { font-family: var(--font); font-weight: 500; cursor: pointer; }
+input  { font-family: var(--font); }
