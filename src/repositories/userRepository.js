@@ -14,7 +14,7 @@ const logger = require('../utils/logger').child({ module: 'userRepository' });
  */
 async function findByEmail(email) {
   const { data, error } = await supabase
-    .from('users')
+    .from('usuarios_old')
     .select('*')
     .eq('email', email)
     .maybeSingle();
@@ -34,7 +34,7 @@ async function findByEmail(email) {
  */
 async function findById(id) {
   const { data, error } = await supabase
-    .from('users')
+    .from('usuarios_old')
     .select('*')
     .eq('id', id)
     .maybeSingle();
@@ -55,7 +55,7 @@ async function findById(id) {
  */
 async function create(datos) {
   const { data, error } = await supabase
-    .from('users')
+    .from('usuarios_old')
     .insert(datos)
     .select()
     .single();
@@ -80,7 +80,7 @@ async function create(datos) {
  */
 async function update(id, campos) {
   const { data, error } = await supabase
-    .from('users')
+    .from('usuarios_old')
     .update({ ...campos, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select()
