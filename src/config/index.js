@@ -6,10 +6,10 @@ require('dotenv').config();
 
 module.exports = {
   env: process.env.NODE_ENV || 'development',
-  port: parseInt(process.env.PORT, 10) || 3000,
+  port: parseInt(process.env.PORT, 10) || 3002,
   allowedOrigins: process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',')
-    : ['http://localhost:5173'],
+    : ['http://localhost:5174'],
 
   jwt: {
     secret: process.env.JWT_SECRET,

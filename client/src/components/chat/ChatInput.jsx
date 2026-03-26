@@ -1,19 +1,21 @@
 // components/chat/ChatInput.jsx
-// Input de texto + botón enviar.
+// Input compacto estilo WhatsApp: altura 44px, bordes redondeados, botón circular.
 // Enter envía, Shift+Enter inserta nueva línea.
-// Botón deshabilitado mientras cargando === true.
 
 import { useState } from 'react';
 
-export default function ChatInput({ onEnviar, cargando }) {
+const SEND_ICON = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export default function ChatInput({ onEnviar, cargando, placeholder = 'Escribí un mensaje...' }) {
   const [texto, setTexto] = useState('');
   const [focused, setFocused] = useState(false);
 
   function handleKeyDown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      submit();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
   }
 
   function submit() {
@@ -23,13 +25,15 @@ export default function ChatInput({ onEnviar, cargando }) {
     setTexto('');
   }
 
+  const activo = !cargando && !!texto.trim();
+
   return (
     <div
       style={{
-        display: 'flex', gap: '0.6rem', alignItems: 'flex-end',
-        padding: '0.85rem 1rem',
-        background: 'var(--color-white)',
-        borderTop: '1.5px solid var(--color-gris)',
+        display: 'flex', alignItems: 'center', gap: '8px',
+        padding: '8px 12px',
+        background: '#ffffff',
+        borderTop: '1px solid #e9e9e9',
       }}
     >
       <textarea
@@ -38,34 +42,40 @@ export default function ChatInput({ onEnviar, cargando }) {
         onKeyDown={handleKeyDown}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        placeholder="Preguntale algo a Scout..."
+        placeholder={placeholder}
         rows={1}
         style={{
-          flex: 1, resize: 'none', padding: '0.6rem 0.85rem',
-          border: `1.5px solid ${focused ? 'var(--color-teal)' : 'var(--color-gris)'}`,
-          borderRadius: 'var(--border-radius)',
-          fontFamily: 'var(--font)', fontSize: '15px',
+          flex: 1, resize: 'none',
+          padding: '10px 16px',
+          height: '44px', maxHeight: '120px',
+          border: `1.5px solid ${focused ? 'var(--color-teal)' : '#e0e0e0'}`,
+          borderRadius: '22px',
+          fontFamily: 'var(--font)', fontSize: '13px',
           outline: 'none', lineHeight: '1.5',
-          maxHeight: '120px', overflowY: 'auto',
+          overflowY: 'auto', color: 'var(--color-text)',
+          background: '#f9f9f9',
           transition: 'border-color 0.2s',
-          color: 'var(--color-text)',
         }}
       />
       <button
         onClick={submit}
-        disabled={cargando || !texto.trim()}
+        disabled={!activo}
+        title="Enviar"
         style={{
-          padding: '0.6rem 1.2rem', height: '40px',
-          background: cargando || !texto.trim() ? 'var(--color-gris)' : 'var(--color-primary)',
-          color: 'var(--color-white)', border: 'none',
-          borderRadius: 'var(--border-radius)', fontSize: '15px',
-          fontWeight: 600, cursor: cargando || !texto.trim() ? 'not-allowed' : 'pointer',
-          transition: 'background 0.2s', whiteSpace: 'nowrap',
+          width: '44px', height: '44px', flexShrink: 0,
+          borderRadius: '50%', border: 'none',
+          background: activo ? 'var(--color-teal)' : '#d0d0d0',
+          color: '#ffffff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: activo ? 'pointer' : 'not-allowed',
+          transition: 'background 0.2s, transform 0.1s',
         }}
-        onMouseEnter={(e) => { if (!cargando && texto.trim()) e.target.style.background = 'var(--color-teal)'; }}
-        onMouseLeave={(e) => { if (!cargando && texto.trim()) e.target.style.background = 'var(--color-primary)'; }}
+        onMouseEnter={(e) => { if (activo) e.currentTarget.style.background = '#33bdb5'; }}
+        onMouseLeave={(e) => { if (activo) e.currentTarget.style.background = 'var(--color-teal)'; }}
+        onMouseDown={(e) => { if (activo) e.currentTarget.style.transform = 'scale(0.93)'; }}
+        onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
       >
-        Enviar
+        {SEND_ICON}
       </button>
     </div>
   );

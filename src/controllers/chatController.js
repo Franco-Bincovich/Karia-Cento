@@ -29,7 +29,7 @@ async function chat(req, res, next) {
         throw new AppError('Conversación no encontrada', 'CONVERSACION_NOT_FOUND', 404);
       }
     } else {
-      conversacion = await conversacionRepo.create(userId);
+      conversacion = await conversacionRepo.create(userId, mensaje.slice(0, 50).trim());
     }
 
     // 2. Cargar historial
@@ -43,6 +43,13 @@ async function chat(req, res, next) {
     // 5. Persistir mensajes actualizados
     await conversacionRepo.updateMessages(conversacion.id, resultado.mensajesActualizados, userId);
 
+    // [DEBUG] Confirmar persistencia — quitar en producción
+    console.log('[DEBUG] Conversación guardada:', {
+      conversacionId: conversacion.id,
+      userId,
+      mensajesCount: resultado.mensajesActualizados.length,
+    });
+
     // 6. Responder
     res.json({ respuesta: resultado.respuesta, conversacionId: conversacion.id });
   } catch (err) {
@@ -50,4 +57,46 @@ async function chat(req, res, next) {
   }
 }
 
-module.exports = { chat };
+/**
+ * GET /api/conversaciones
+ * Devuelve las últimas 20 conversaciones del usuario autenticado.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+async function listarConversaciones(req, res, next) {
+  try {
+    const { userId } = req.user;
+    logger.info('Listando conversaciones', { userId });
+    const conversaciones = await conversacionRepo.findByUser(userId, 20);
+    res.json({ conversaciones });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /api/conversaciones/:id
+ * Carga una conversación específica verificando que pertenece al usuario.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+async function cargarConversacion(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { userId } = req.user;
+    const conversacion = await conversacionRepo.findById(id, userId);
+    if (!conversacion) {
+      throw new AppError('Conversación no encontrada', 'CONVERSACION_NOT_FOUND', 404);
+    }
+    logger.info('Conversación cargada', { userId, conversacionId: id });
+    res.json({ conversacion, mensajes: conversacion.messages || [] });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { chat, listarConversaciones, cargarConversacion };

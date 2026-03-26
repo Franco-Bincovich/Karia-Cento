@@ -10,7 +10,8 @@ const { TMP_DIR } = require('../utils/paths');
 
 // Colores de marca KarIA
 const COLOR_HEADER_BG = 'FF081C54'; // #081c54 — azul oscuro
-const COLOR_MIN_BG = 'FF43D1C9'; // #43d1c9 — verde KarIA (precio más bajo)
+const COLOR_MIN_BG    = 'FFFFD700'; // #FFD700 — amarillo (precio más bajo)
+const COLOR_NO_DISP   = 'FFD9D9D9'; // gris claro para celdas sin dato
 const ANCHO_PRODUCTO = 40;
 const ANCHO_TIENDA = 18;
 
@@ -88,11 +89,11 @@ async function generarExcelComparacion({ nombreArchivo, userId, query, resultado
       const soloPrecios = valores.filter((v) => v !== null);
       const min = soloPrecios.length > 0 ? Math.min(...soloPrecios) : null;
 
-      const fila = [producto.nombre, ...valores.map((v) => (v !== null ? formatearPrecio(v) : '—'))];
+      const fila = [producto.nombre, ...valores.map((v) => (v !== null ? formatearPrecio(v) : 'No disponible'))];
       const row = worksheet.addRow(fila);
       row.getCell(1).alignment = { wrapText: true, vertical: 'top' };
 
-      // Precio mínimo de la fila → fondo verde KarIA
+      // Precio mínimo de la fila → fondo amarillo
       if (min !== null) {
         valores.forEach((v, idx) => {
           if (v === min) {
@@ -102,6 +103,15 @@ async function generarExcelComparacion({ nombreArchivo, userId, query, resultado
           }
         });
       }
+
+      // Sin datos → fondo gris, texto gris
+      valores.forEach((v, idx) => {
+        if (v === null) {
+          const cell = row.getCell(idx + 2);
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_NO_DISP } };
+          cell.font = { color: { argb: 'FF888888' }, italic: true };
+        }
+      });
     });
 
     const rutaArchivo = path.join(TMP_DIR, `${userId}_${nombreArchivo}.xlsx`);

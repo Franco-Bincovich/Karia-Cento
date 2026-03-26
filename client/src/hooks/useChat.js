@@ -1,47 +1,57 @@
 // hooks/useChat.js
-// Maneja el estado del chat: mensajes, conversacionId, loading, error.
-// Llama a chatApi.enviar y actualiza el estado con la respuesta.
+// Maneja el estado del chat: mensajes, conversacionId, loading, error, conversacionFecha.
 
 import { useState, useCallback } from 'react';
-import { chatApi } from '../services/api';
+import { chatApi, conversacionesApi } from '../services/api';
 import { useAuth } from './useAuth';
 
-/**
- * Crea un objeto de mensaje con rol y timestamp.
- * @param {'user'|'agent'} rol
- * @param {string} texto
- */
 function crearMensaje(rol, texto) {
   return { id: crypto.randomUUID(), rol, texto, timestamp: new Date() };
 }
 
-export function useChat() {
+/**
+ * Extrae texto plano de un campo content de Anthropic.
+ * content puede ser string, o array de bloques { type, text }.
+ */
+function extraerTextoContent(content) {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content.filter((b) => b.type === 'text').map((b) => b.text).join('');
+  }
+  return '';
+}
+
+/**
+ * @param {{ onMensajeGuardado?: () => void }} [opts]
+ */
+export function useChat({ onMensajeGuardado } = {}) {
   const { token } = useAuth();
-  const [mensajes, setMensajes] = useState([]);
+  const [mensajes, setMensajes]             = useState([]);
   const [conversacionId, setConversacionId] = useState(null);
-  const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState(null);
+  const [conversacionFecha, setConvFecha]   = useState(null);
+  const [cargando, setCargando]             = useState(false);
+  const [error, setError]                   = useState(null);
 
   const enviar = useCallback(
     async (texto) => {
       if (!texto.trim() || cargando) return;
 
-      // 1. Agregar mensaje del usuario al estado inmediatamente
       setMensajes((prev) => [...prev, crearMensaje('user', texto.trim())]);
       setCargando(true);
       setError(null);
 
       try {
-        // 2. Llamar al backend
-        const data = await chatApi.enviar(texto.trim(), conversacionId, token);
+        const idConversacion = conversacionId || undefined;
+        const data = await chatApi.enviar(texto.trim(), idConversacion, token);
 
-        // 3. Agregar respuesta del agente
         setMensajes((prev) => [...prev, crearMensaje('agent', data.respuesta)]);
 
-        // 4. Guardar conversacionId si es nueva conversación
         if (!conversacionId && data.conversacionId) {
           setConversacionId(data.conversacionId);
         }
+
+        // Notificar al sidebar que hay datos nuevos para refrescar
+        onMensajeGuardado?.();
       } catch (err) {
         const msg = err.message || 'Error al conectar con el servidor';
         setError(msg);
@@ -50,8 +60,47 @@ export function useChat() {
         setCargando(false);
       }
     },
-    [token, conversacionId, cargando]
+    [token, conversacionId, cargando, onMensajeGuardado]
   );
 
-  return { mensajes, enviar, cargando, error };
+  /**
+   * Carga una conversación guardada.
+   * Los mensajes almacenados usan formato Anthropic { role, content }.
+   * content puede ser string o array de content blocks.
+   */
+  const cargarConversacion = useCallback(
+    async (id) => {
+      try {
+        const data = await conversacionesApi.cargar(id, token);
+
+        const msgs = (data.mensajes || [])
+          .map((m) => {
+            // Soporte formato Anthropic (role/content) y formato legacy (rol/contenido/texto)
+            const role = m.role || m.rol || '';
+            const texto = extraerTextoContent(m.content ?? m.contenido ?? m.texto ?? '');
+            const rol = role === 'assistant' ? 'agent' : 'user';
+            return { role, texto, rol };
+          })
+          .filter(({ texto, role }) => texto.length > 0 && (role === 'user' || role === 'assistant'))
+          .map(({ rol, texto }) => crearMensaje(rol, texto));
+
+        setMensajes(msgs);
+        setConversacionId(id);
+        setConvFecha(data.conversacion?.created_at ? new Date(data.conversacion.created_at) : null);
+      } catch {
+        // fail silently — historial no bloquea el chat
+      }
+    },
+    [token]
+  );
+
+  /** Limpia el estado para empezar una conversación nueva desde cero. */
+  const nuevaConversacion = useCallback(() => {
+    setMensajes([]);
+    setConversacionId(null);
+    setConvFecha(null);
+    setError(null);
+  }, []);
+
+  return { mensajes, enviar, cargando, error, cargarConversacion, conversacionFecha, nuevaConversacion };
 }

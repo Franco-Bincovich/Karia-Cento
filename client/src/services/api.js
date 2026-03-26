@@ -29,3 +29,8 @@ export const chatApi = {
   enviar: (mensaje, conversacionId, token) =>
     apiFetch('/api/chat', { method: 'POST', body: JSON.stringify({ mensaje, conversacionId }) }, token),
 };
+
+export const conversacionesApi = {
+  listar: (token) => apiFetch('/api/conversaciones', {}, token),
+  cargar: (id, token) => apiFetch(`/api/conversaciones/${id}`, {}, token),
+};
