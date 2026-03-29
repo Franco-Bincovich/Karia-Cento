@@ -28,3 +28,26 @@ body {
 
 button { font-family: var(--font); font-weight: 500; cursor: pointer; }
 input  { font-family: var(--font); }
+
+/* ── Tablas Markdown (remark-gfm) ── */
+.md-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.md-thead { background: #081c54; }
+.md-th {
+  color: #ffffff;
+  font-weight: 600;
+  padding: 6px 10px;
+  text-align: left;
+  border: 1px solid #081c54;
+}
+.md-td {
+  padding: 5px 10px;
+  border: 1px solid #d1d5db;
+}
+.md-table tbody tr:nth-child(even) { background: rgba(8, 28, 84, 0.04); }
+.md-table tbody tr:nth-child(odd)  { background: #ffffff; }

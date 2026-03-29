@@ -52,7 +52,8 @@
       "Bash(echo \"=== Grey Box: trust proxy config ===\" grep -rn \"trust proxy\\\\|trustProxy\\\\|set.*trust\" \"C:\\\\Users\\\\Franco Bincovich\\\\Desktop\\\\Visual Code\\\\Karia-Agent\\\\Karia-Scout\\\\src\" --include=\"*.js\" __NEW_LINE_048378489b726d69__ echo \"\" echo \"=== Grey Box: Verificar max length en password validator ===\" grep -n \"isLength\\\\|isString\\\\|password\" \"C:\\\\Users\\\\Franco Bincovich\\\\Desktop\\\\Visual Code\\\\Karia-Agent\\\\Karia-Scout\\\\src\\\\routes\\\\authRoutes.js\" __NEW_LINE_048378489b726d69__ echo \"\" echo \"=== Grey Box: Verificar DUMMY_HASH en authService ===\" grep -n \"DUMMY_HASH\\\\|bcrypt.compare\\\\|intentosFallidos\" \"C:\\\\Users\\\\Franco Bincovich\\\\Desktop\\\\Visual Code\\\\Karia-Agent\\\\Karia-Scout\\\\src\\\\services\\\\authService.js\" __NEW_LINE_048378489b726d69__ echo \"\" echo \"=== Grey Box: userRepo.findByEmail - ORM seguro ===\" grep -n \"findByEmail\\\\|eq\\\\|raw\\\\|query\\\\|filter\" \"C:\\\\Users\\\\Franco Bincovich\\\\Desktop\\\\Visual Code\\\\Karia-Agent\\\\Karia-Scout\\\\src\\\\repositories\\\\userRepository.js\")",
       "Bash(find 'C:/Users/Franco Bincovich/Desktop/Visual Code/Karia-Agent/Karia-Scout/src' -type f \\\\\\(-name *.js -o -name *.jsx -o -name *.json -o -name *.sql -o -name *.md -o -name *.yml \\\\\\))",
       "Bash(find 'C:/Users/Franco Bincovich/Desktop/Visual Code/Karia-Agent/Karia-Scout/client/src' -type f \\\\\\(-name *.js -o -name *.jsx -o -name *.json -o -name *.sql -o -name *.md -o -name *.yml \\\\\\))",
-      "Bash(find /c/Users/Franco Bincovich/Desktop/Visual Code/Karia-Agent/Karia-Cento/client -maxdepth 2 -type f \\\\\\(-name *.json -o -name *.config.* -o -name vite.config.* \\\\\\))"
+      "Bash(find /c/Users/Franco Bincovich/Desktop/Visual Code/Karia-Agent/Karia-Cento/client -maxdepth 2 -type f \\\\\\(-name *.json -o -name *.config.* -o -name vite.config.* \\\\\\))",
+      "Bash(node:*)"
     ]
   }
 }

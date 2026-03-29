@@ -3,19 +3,20 @@
 // Agente incluye avatar KarIA a la izquierda. Timestamp HH:mm en 10px.
 
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import FileDownloadButton from '../ui/FileDownloadButton';
 
-const RE_XLSX  = /https?:\/\/\S+\.xlsx\b|\S*(?:\/|\\)tmp(?:\/|\\)\S+\.xlsx\b/gi;
-const RE_DOCX  = /https?:\/\/\S+\.docx\b|\S*(?:\/|\\)tmp(?:\/|\\)\S+\.docx\b/gi;
+const RE_DESCARGA = /\[DESCARGA:([^\]]+\.(?:xlsx|docx))\]/gi;
 const RE_GAMMA = /https?:\/\/\S*gamma\.app\S*/gi;
 const RE_DRIVE = /https?:\/\/drive\.google\.com\S*/gi;
 
-function nombreDeRuta(ruta) { return ruta.split(/[/\\]/).pop().split('?')[0]; }
 function urlDescarga(f) { return `/api/files/download?file=${encodeURIComponent(f)}`; }
+function limpiarDescargas(t) { return t.replace(RE_DESCARGA, '').trim(); }
 function detectarLinks(t) {
+  const descargas = [...t.matchAll(RE_DESCARGA)].map(m => m[1]);
   return {
-    xlsx:  [...t.matchAll(RE_XLSX)].map(m => m[0]),
-    docx:  [...t.matchAll(RE_DOCX)].map(m => m[0]),
+    xlsx:  descargas.filter(f => f.endsWith('.xlsx')),
+    docx:  descargas.filter(f => f.endsWith('.docx')),
     gamma: [...t.matchAll(RE_GAMMA)].map(m => m[0]),
     drive: [...t.matchAll(RE_DRIVE)].map(m => m[0]),
   };
@@ -72,29 +73,35 @@ export default function MessageBubble({ mensaje }) {
   const eu = mensaje.rol === 'user';
   const links = eu ? null : detectarLinks(mensaje.texto);
   const tieneAcciones = links && (links.xlsx.length + links.docx.length + links.gamma.length + links.drive.length) > 0;
+  const textoVisible = eu ? mensaje.texto : limpiarDescargas(mensaje.texto);
 
   return (
     <div style={s.wrapper(eu)}>
       {!eu && <AgentAvatar />}
       <div style={s.burbuja(eu)}>
         {eu ? (
-          <span>{mensaje.texto}</span>
+          <span>{textoVisible}</span>
         ) : (
           <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
             components={{
-              pre:  ({ children }) => <pre style={s.mdPre}>{children}</pre>,
-              code: ({ children }) => <code style={{ background: 'rgba(8,28,84,0.06)', borderRadius: '3px', padding: '1px 4px', fontSize: '12px' }}>{children}</code>,
-              p:    ({ children }) => <p style={{ marginBottom: '4px' }}>{children}</p>,
+              pre:    ({ children }) => <pre style={s.mdPre}>{children}</pre>,
+              code:   ({ children }) => <code style={{ background: 'rgba(8,28,84,0.06)', borderRadius: '3px', padding: '1px 4px', fontSize: '12px' }}>{children}</code>,
+              p:      ({ children }) => <p style={{ marginBottom: '4px' }}>{children}</p>,
+              table:  ({ children }) => <table className="md-table">{children}</table>,
+              thead:  ({ children }) => <thead className="md-thead">{children}</thead>,
+              th:     ({ children }) => <th className="md-th">{children}</th>,
+              td:     ({ children }) => <td className="md-td">{children}</td>,
             }}
           >
-            {mensaje.texto}
+            {textoVisible}
           </ReactMarkdown>
         )}
 
         {tieneAcciones && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
-            {links.xlsx.map((r, i) => <FileDownloadButton key={`x${i}`} url={urlDescarga(nombreDeRuta(r))} nombre="Descargar Excel" />)}
-            {links.docx.map((r, i) => <FileDownloadButton key={`d${i}`} url={urlDescarga(nombreDeRuta(r))} nombre="Descargar Word" />)}
+            {links.xlsx.map((f, i) => <FileDownloadButton key={`x${i}`} url={urlDescarga(f)} nombre="Descargar Excel" />)}
+            {links.docx.map((f, i) => <FileDownloadButton key={`d${i}`} url={urlDescarga(f)} nombre="Descargar Word" />)}
             {links.gamma.map((u, i) => <a key={`g${i}`} href={u} target="_blank" rel="noreferrer" style={s.link}>Ver presentación →</a>)}
             {links.drive.map((u, i) => <a key={`dr${i}`} href={u} target="_blank" rel="noreferrer" style={s.link}>Abrir en Drive →</a>)}
           </div>

@@ -44,6 +44,10 @@ module.exports = {
     apiKey: process.env.GAMMA_API_KEY,
   },
 
+  mercadolibre: {
+    accessToken: process.env.MERCADOLIBRE_ACCESS_TOKEN,
+  },
+
   rateLimit: {
     login: { windowMs: 15 * 60 * 1000, max: 10 },
     api: { windowMs: 15 * 60 * 1000, max: 100 },

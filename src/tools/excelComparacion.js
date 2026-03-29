@@ -1,5 +1,6 @@
 // tools/excelComparacion.js
-// Generación de Excel pivoteado de comparación de precios por tienda.
+// Generación de Excel de comparación de precios por tienda.
+// Recibe formato unificado: { nombre, precios: { tienda: number|null } }.
 
 const path = require('path');
 const fs = require('fs');
@@ -8,50 +9,30 @@ const { AppError } = require('../middleware/errorHandler');
 const logger = require('../utils/logger').child({ module: 'excelComparacion' });
 const { TMP_DIR } = require('../utils/paths');
 
-// Colores de marca KarIA
-const COLOR_HEADER_BG = 'FF081C54'; // #081c54 — azul oscuro
-const COLOR_MIN_BG    = 'FFFFD700'; // #FFD700 — amarillo (precio más bajo)
-const COLOR_NO_DISP   = 'FFD9D9D9'; // gris claro para celdas sin dato
-const ANCHO_PRODUCTO = 40;
+const COLOR_HEADER_BG = 'FF081C54';
+const COLOR_MIN_BG = 'FF43D1C9';
+const COLOR_WHITE = 'FFFFFFFF';
+const COLOR_NO_DISP = 'FFD9D9D9';
+const ANCHO_PRODUCTO = 50;
 const ANCHO_TIENDA = 18;
 
 /** Formatea un número como precio argentino: $89.999 */
 function formatearPrecio(precio) {
-  return '$' + Math.round(precio).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return (
+    '$' +
+    Math.round(precio)
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  );
 }
 
 /**
- * Pivotea el array de resultados de buscarPrecios() a { tiendas, productos }.
- * Agrupa por nombre normalizado; si la misma tienda repite producto, conserva el menor precio.
- *
- * @param {Object[]} resultados - array de { tienda, nombre, precio, ... }
- * @returns {{ tiendas: string[], productos: { nombre: string, precios: Object }[] }}
- */
-function pivotear(resultados) {
-  const tiendas = [...new Set(resultados.map((r) => r.tienda))];
-  const productosMap = new Map();
-
-  resultados.forEach((r) => {
-    const key = r.nombre.toLowerCase().trim().replace(/\s+/g, ' ');
-    if (!productosMap.has(key)) {
-      productosMap.set(key, { nombre: r.nombre, precios: {} });
-    }
-    const entrada = productosMap.get(key);
-    if (entrada.precios[r.tienda] === undefined || r.precio < entrada.precios[r.tienda]) {
-      entrada.precios[r.tienda] = r.precio;
-    }
-  });
-
-  return { tiendas, productos: [...productosMap.values()] };
-}
-
-/**
- * Genera un Excel pivoteado de comparación de precios por tienda.
- * Encabezado: Producto | Tienda1 | Tienda2 | ... (dinámico).
- * Cada fila = un producto; el precio mínimo de cada fila se resalta en verde KarIA.
+ * Genera un Excel de comparación de precios por tienda.
+ * Una fila por producto, una columna por tienda.
+ * Verde en el precio más bajo de cada fila (solo si hay 2+ precios).
  *
  * @param {{ nombreArchivo: string, userId: string, query: string, resultados: Object[] }} params
- * resultados es el array que devuelve buscarPrecios()
+ * resultados: array de { nombre: string, precios: { tienda: number|null, ... } }
  * @returns {Promise<string>} ruta local del archivo generado en /tmp
  * @throws {AppError} code: 'EXCEL_ERROR'
  */
@@ -61,7 +42,15 @@ async function generarExcelComparacion({ nombreArchivo, userId, query, resultado
       fs.mkdirSync(TMP_DIR, { recursive: true });
     }
 
-    const { tiendas, productos } = pivotear(resultados);
+    // Filtrar productos sin precio en ninguna tienda
+    const productos = resultados.filter((r) => {
+      const precios = Object.values(r.precios);
+      return precios.some((p) => p !== null && p > 0);
+    });
+
+    // Extraer tiendas de las columnas del primer producto
+    const tiendas = productos.length > 0 ? Object.keys(productos[0].precios) : [];
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(`Comparación ${query}`.substring(0, 31));
 
@@ -74,7 +63,7 @@ async function generarExcelComparacion({ nombreArchivo, userId, query, resultado
       })),
     ];
 
-    // Encabezado: fondo azul oscuro, texto blanco negrita
+    // Encabezado
     const headerRow = worksheet.getRow(1);
     headerRow.height = 22;
     headerRow.eachCell((cell) => {
@@ -86,30 +75,29 @@ async function generarExcelComparacion({ nombreArchivo, userId, query, resultado
     // Filas de datos
     productos.forEach((producto) => {
       const valores = tiendas.map((t) => producto.precios[t] ?? null);
-      const soloPrecios = valores.filter((v) => v !== null);
-      const min = soloPrecios.length > 0 ? Math.min(...soloPrecios) : null;
+      const soloPrecios = valores.filter((v) => v !== null && v > 0);
+      const min = soloPrecios.length > 1 ? Math.min(...soloPrecios) : null;
 
-      const fila = [producto.nombre, ...valores.map((v) => (v !== null ? formatearPrecio(v) : 'No disponible'))];
-      const row = worksheet.addRow(fila);
+      const celdas = [
+        producto.nombre,
+        ...valores.map((v) => (v !== null && v > 0 ? formatearPrecio(v) : 'No disponible')),
+      ];
+      const row = worksheet.addRow(celdas);
       row.getCell(1).alignment = { wrapText: true, vertical: 'top' };
 
-      // Precio mínimo de la fila → fondo amarillo
-      if (min !== null) {
-        valores.forEach((v, idx) => {
-          if (v === min) {
-            const cell = row.getCell(idx + 2); // col 1 = Producto; tiendas desde col 2
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_MIN_BG } };
-            cell.font = { bold: true };
-          }
-        });
-      }
-
-      // Sin datos → fondo gris, texto gris
+      let verdeAsignado = false;
       valores.forEach((v, idx) => {
-        if (v === null) {
-          const cell = row.getCell(idx + 2);
+        const cell = row.getCell(idx + 2);
+
+        if (v === null || v <= 0) {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_NO_DISP } };
           cell.font = { color: { argb: 'FF888888' }, italic: true };
+        } else if (min !== null && v === min && !verdeAsignado) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_MIN_BG } };
+          cell.font = { bold: true };
+          verdeAsignado = true;
+        } else {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_WHITE } };
         }
       });
     });
@@ -120,7 +108,7 @@ async function generarExcelComparacion({ nombreArchivo, userId, query, resultado
     logger.info('Excel comparación generado', {
       rutaArchivo,
       query,
-      productos: productos.length,
+      filas: productos.length,
       tiendas: tiendas.length,
     });
     return rutaArchivo;

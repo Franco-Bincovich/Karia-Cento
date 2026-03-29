@@ -5,7 +5,7 @@ const toolsCore = [
   {
     name: 'buscar_precios',
     description:
-      'Busca y compara precios de productos en las principales cadenas de electrodomésticos de Argentina (Naldo, OnCity, Frávega, Cetrogar, Megatone, Musimundo). Detecta automáticamente las tiendas mencionadas.',
+      'Busca y compara precios de productos en las principales cadenas de electrodomésticos de Argentina (Naldo, OnCity, Frávega, Cetrogar, Megatone, Musimundo, MercadoLibre). Busca automáticamente cada producto en todas las tiendas. Retorna array de { nombre, precios: { tienda: precio|null } }.',
     input_schema: {
       type: 'object',
       properties: {
@@ -35,7 +35,7 @@ const toolsCore = [
   {
     name: 'generar_excel_comparacion',
     description:
-      'Genera un Excel pivoteado de comparación de precios por tienda. Una fila por producto, una columna por tienda. El precio más bajo de cada fila se resalta en verde. Usar después de buscar_precios.',
+      'Genera un Excel de comparación de precios por tienda. Una fila por producto, una columna por tienda. Verde en el precio más bajo por fila. Recibe el array unificado de buscar_precios.',
     input_schema: {
       type: 'object',
       properties: {
